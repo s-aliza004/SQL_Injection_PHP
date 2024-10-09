@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PARALLEL - LECTURE LIST</title>
+    <link rel="icon" type="image/x-icon" href="./images/ico.png">  
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="display-4 text-center">
+            <i class="fas fa-chalkboard-teacher text-primary"></i>
+            PDC-<span class="text-primary">Lecture</span>-List
+        </h1>
+
+        <form id="lecture-form">
+            <div class="form-group">
+                <label for="title">Lecture Title</label>
+                <input type="text" class="form-control" id="title" name="title">
+            </div>
+            <div class="form-group">
+                <label for="description">Lecture Description</label>
+                <input type="text" class="form-control" id="description" name="description">
+            </div>
+            <div class="form-group">
+                <label for="date">Lecture Date</label>
+                <input type="date" class="form-control" id="date" name="date">
+            </div>
+            <div class="form-group">
+                <label for="time">Lecture Time</label>
+                <input type="time" class="form-control" id="time" name="time">
+            </div>
+            <div class="form-group">
+                <label for="lecturer">Lecturer Name</label>
+                <input type="text" class="form-control" id="lecturer" name="lecturer">
+            </div>
+            <div class="form-group">
+                <label for="duration">Lecture Duration</label>
+                <input type="text" class="form-control" id="duration" name="duration">
+            </div>
+            <div class="form-group">
+                <label for="room">Lecture Room</label>
+                <input type="text" class="form-control" id="room" name="room">
+            </div>
+            <div class="form-group">
+                <label for="subject">Lecture Subject</label>
+                <input type="text" class="form-control" id="subject" name="subject">
+            </div>
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-block">Add Lecture</button>
+        </form>
+
+        <table class="table table-striped mt-5">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Lecture Title</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Lecturer</th>
+                    <th>Duration</th>
+                    <th>Room</th>
+                    <th>Subject</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="lecture-list">
+
+            </tbody>
+        </table>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        // Lecture Class: Represents a Lecture
+        class Lecture {
+            constructor(id, title, description, date, time, lecturer, duration, room, subject) {
+                this.id = id;
+                this.title = title;
+                this.description = description;
+                this.date = date;
+                this.time = time;
+                this.lecturer = lecturer;
+                this.duration = duration;
+                this.room = room;
+                this.subject = subject;
+            }
+        }
+
+        // UI Class: Handle UI Tasks
+        class UI {
+            static editMode = false;
+            static editTarget = null;
+
+            static displayLectures() {
+                const lectures = Store.getLectures();
+                lectures.forEach((lecture) => UI.addLectureToList(lecture));
+            }
+
+            static addLectureToList(lecture) {
+                const table = document.querySelector("#lecture-list");
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td>${lecture.title}</td>
+                    <td>${lecture.description}</td>
+                    <td>${lecture.date}</td>
+                    <td>${lecture.time}</td>
+                    <td>${lecture.lecturer}</td>
+                    <td>${lecture.duration}</td>
+                    <td>${lecture.room}</td>
+                    <td>${lecture.subject}</td>
+                    <td><i class="fas fa-trash-alt text-danger" onClick="UI.removeLecture(event, '${lecture.id}')"></i></td>
+                    <td><i class="far fa-edit text-primary" onClick="UI.editLecture(event, '${lecture.id}')"></i></td>
+                `;
+
+                table.appendChild(row);
+            }
+
+            static checkForId(id) {
+                const lectures = Store.getLectures();
+                let flag = false;
+
+                lectures.forEach((lec) => {
+                    if (lec.id === id) {
+                        flag = true;
+                    }
+                });
+
+                return flag;
+            }
+
+            static updateLectureToList(lecture) {
+                if (UI.editTarget && UI.editMode) {
+                    let row = UI.editTarget.parentElement.parentElement;
+                    row.innerHTML = `
+                        <td>${lecture.title}</td>
+                        <td>${lecture.description}</td>
+                        <td>${lecture.date}</td>
+                        <td>${lecture.time}</td>
+                        <td>${lecture.lecturer}</td>
+                        <td>${lecture.duration}</td>
+                        <td>${lecture.room}</td>
+                        <td>${lecture.subject}</td>
+                        <td><i class="fas fa-trash-alt text-danger" onClick="UI.removeLecture(event, '${lecture.id}')"></i></td>
+                        <td><i class="far fa-edit text-primary" onClick="UI.editLecture(event, '${lecture.id}')"></i></td>
+                    `;
+                }
+            }
+
+            static editLecture(event, id) {
+                UI.editTarget = event.target;
+                UI.editMode = true;
+                let lectureList = Store.getLectures();
+                lectureList.forEach((lecture) => {
+                    if (lecture.id === id) {
+                        document.querySelector("#title").value = lecture.title;
+                        document.querySelector("#description").value = lecture.description;
+                        document.querySelector("#date").value = lecture.date;
+                        document.querySelector("#time").value = lecture.time;
+                        document.querySelector("#lecturer").value = lecture.lecturer;
+                        document.querySelector("#duration").value = lecture.duration;
+                        document.querySelector("#room").value = lecture.room;
+                        document.querySelector("#subject").value = lecture.subject;
+                    }
+                });
+
+                document.getElementById("submitBtn").innerHTML = "Edit Lecture";
+                document.querySelector("#title").disabled = true;
+            }
+
+            static removeLecture(event, id) {
+                event.target.parentElement.parentElement.remove();
+                Store.removeLecture(id);
+                UI.showAlertMessage("Lecture removed", "success");
+            }
+
+            static clearFields() {
+                document.querySelector("#title").value = '';
+                document.querySelector("#description").value = '';
+                document.querySelector("#date").value = '';
+                document.querySelector("#time").value = '';
+                document.querySelector("#lecturer").value = '';
+                document.querySelector("#duration").value = '';
+                document.querySelector("#room").value = '';
+                document.querySelector("#subject").value = '';
+                UI.editMode = false;
+                UI.editTarget = null;
+                document.querySelector("#title").disabled = false;
+                document.getElementById("submitBtn").innerHTML = "Add Lecture";
+            }
+
+            static showAlertMessage(message, type) {
+                toastr.options = {
+                    "closeButton": true,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "showDuration": "300",
+                    "hideDuration": "1000",
+                    "timeOut": "5000",
+                    "extendedTimeOut": "1000",
+                }
+
+                if(type === 'success') {
+                    toastr.success(message);
+                } else if(type === 'danger') {
+                    toastr.error(message);
+                }
+            }
+        }
+
+        // Store Class: Handles Storage
+        class Store {
+            static getLectures() {
+                let lectures;
+                if (localStorage.getItem('lectures') === null) {
+                    lectures = [];
+                } else {
+                    lectures = JSON.parse(localStorage.getItem('lectures'));
+                }
+
+                return lectures;
+            }
+
+            static addLecture(lecture) {
+                const lectures = Store.getLectures();
+                if (UI.editMode) {
+                    Store.updateLecture(lecture);
+                } else {
+                    lectures.push(lecture);
+                    localStorage.setItem('lectures', JSON.stringify(lectures));
+                }
+            }
+
+            static removeLecture(id) {
+                const lectures = Store.getLectures();
+                lectures.forEach((lecture, index) => {
+                    if (lecture.id === id) {
+                        lectures.splice(index, 1);
+                    }
+                });
+
+                localStorage.setItem('lectures', JSON.stringify(lectures));
+            }
+
+            static updateLecture(lecture) {
+                const lectures = Store.getLectures();
+                lectures.forEach((lec, index) => {
+                    if (lec.id === lecture.id) {
+                        lectures[index] = lecture;
+                    }
+                });
+
+                localStorage.setItem('lectures', JSON.stringify(lectures));
+            }
+        }
+
+        // Event: Display Lectures
+        document.addEventListener('DOMContentLoaded', UI.displayLectures);
+
+        // Event: Add a Lecture
+        document.querySelector('#lecture-form').addEventListener('submit', (e) => {
+            // Prevent actual submit
+            e.preventDefault();
+
+            // Get form values
+            const id = document.querySelector('#title').value + '_' + document.querySelector('#date').value;
+            const title = document.querySelector('#title').value;
+            const description = document.querySelector('#description').value;
+            const date = document.querySelector('#date').value;
+            const time = document.querySelector('#time').value;
+            const lecturer = document.querySelector('#lecturer').value;
+            const duration = document.querySelector('#duration').value;
+            const room = document.querySelector('#room').value;
+            const subject = document.querySelector('#subject').value;
+
+            // Validate
+            if (title === '' || description === '' || date === '' || time === '' || lecturer === '' || duration === '' || room === '' || subject === '') {
+                UI.showAlertMessage('Please fill in all fields', 'danger');
+            } else if (!UI.editMode && UI.checkForId(id)) {
+                UI.showAlertMessage('Lecture already exists on the selected date', 'danger');
+            } else {
+                // Instantiate lecture
+                const lecture = new Lecture(id, title, description, date, time, lecturer, duration, room, subject);
+
+                // Add Lecture to UI
+                if (UI.editMode) {
+                    UI.updateLectureToList(lecture);
+                    Store.updateLecture(lecture);
+                    UI.showAlertMessage('Lecture updated', 'success');
+                } else {
+                    UI.addLectureToList(lecture);
+
+                    // Add lecture to store
+                    Store.addLecture(lecture);
+                    UI.showAlertMessage('Lecture added', 'success');
+                }
+
+                // Clear fields
+                UI.clearFields();
+            }
+        });
+    </script>
+</body>
+</html>
